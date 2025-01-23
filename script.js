@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
       spriteSrc: playerSpriteSrc,
       cooldown: 0.05,
       life: 3,
+      bomb: 3,
       hitboxSize: 8,
     });
 

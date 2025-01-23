@@ -10,7 +10,7 @@ export default class PlayerLives {
     this.lifeSprite = new Image();
     this.lifeSprite.src = this.lifeSrc;
   }
-  update() { }
+  update() {}
   render(ctx) {
     const { player, canvas } = this.gameState;
     ctx.drawImage(
@@ -20,16 +20,15 @@ export default class PlayerLives {
       this.playerSprite.width * 2.5,
       this.playerSprite.height * 2.5
     );
-    for (let i = 1; i < player.life; i++) {
+    for (let i = 0; i < player.life - 1; i++) {
       ctx.drawImage(
         this.lifeSprite,
-        770 + (this.playerSprite.width * 2.5) + i * 35,
+        880 + i * 35,
         220,
         this.lifeSprite.width * 2.2,
         this.lifeSprite.height * 2.2
       );
     }
-
   }
 
   reset() {
