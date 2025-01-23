@@ -31,7 +31,7 @@ export default class GameZone {
 
     render(ctx) {
         if (this.background) {
-            ctx.drawImage(this.background, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.background, this.x, this.y - 20, this.width + 20, this.height + 25);
             if (this.darkness) {
                 ctx.save();
                 ctx.fillStyle = `rgba(0,0,0, ${this.darkness})`;

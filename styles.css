@@ -1,21 +1,20 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
 
-body{
-    font-family: Arial,  sans-serif;
-    text-align: center;
-
-    background-color: rgb(16, 8, 33);
-    color: white;
-    margin: 0;
-    padding: 0;
+  background-color: rgb(16, 8, 33);
+  color: white;
+  margin: 0;
+  padding: 0;
 }
-canvas{
-    border: 1px solid white;
-    display: block;
-    margin: 20px auto;
-    background-color: black
+canvas {
+  border: 1px solid white;
+  display: block;
+  margin: 20px auto;
+  background-color: black;
 }
-.center-div{
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.center-div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

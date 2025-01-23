@@ -10,9 +10,12 @@ export default class Bullet {
         width = null,
         height = null,
         isRound,
+
     }) {
         if (!spriteSrc) {
             throw new Error("A sprite source is required for the Bullet class.");
+
+
         }
 
         this.friendly = friendly;
@@ -48,12 +51,14 @@ export default class Bullet {
     }
 
     update(deltaTime) {
+
         const { x, y } = this.getVelocity();
         this.x += x * deltaTime;
         this.y += y * deltaTime;
     }
 
     render(ctx) {
+
         ctx.drawImage(
             this.sprite,
             this.x - this.width / 2,
