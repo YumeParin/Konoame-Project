@@ -20,7 +20,7 @@ export default class PlayerLives {
       this.playerSprite.width * 2.5,
       this.playerSprite.height * 2.5
     );
-    for (let i = 0; i < player.life - 1; i++) {
+    for (let i = 0; i < player.stats.life - 1; i++) {
       ctx.drawImage(
         this.lifeSprite,
         880 + i * 35,

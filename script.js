@@ -71,12 +71,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
     window.addEventListener("keyup", (e) => {
-      gameState.keys[e.key.toLowerCase()] = false
+      gameState.keys[e.key.toLowerCase()] = false;
     });
 
     //Start the game loop
     requestAnimationFrame(gameLoop);
-
   }
 
   function toggleOptionsWindow(show) {
@@ -85,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       console.log("Options window hidden");
     }
-
   }
 
   function spawnEnemy() {
@@ -96,15 +94,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const cooldown = 0.4;
     const hitboxSize = 100;
     const maxHp = 10000;
-    const enemy = new Enemy(
-      x,
-      y,
-      speed,
-      enemySpriteSrc,
-      cooldown,
-      hitboxSize,
-      maxHp
-    );
+    const enemy = new Enemy({
+      x: x,
+      y: y,
+      speed: speed,
+      spriteSrc: enemySpriteSrc,
+      cooldown: cooldown,
+      hitboxSize: hitboxSize,
+      maxHp: maxHp,
+    });
 
     gameState.enemies.push(enemy);
   }
@@ -132,7 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
     gameState.accumulatedTime += deltaTime;
     // Update the game at 60fps
     while (gameState.accumulatedTime >= gameState.fixedTimeStep) {
-
       update(gameState.fixedTimeStep / 1000); // Convert to seconds
       gameState.accumulatedTime -= gameState.fixedTimeStep;
     }
@@ -140,7 +137,6 @@ document.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(gameLoop);
   }
   function renderPauseScreen() {
-
     const { ctx, canvas } = gameState;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.5)";
@@ -152,21 +148,20 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillText("Game Paused", canvas.width / 2, canvas.height / 2);
     ctx.restore();
   }
-
+  console.log("./assets/characters/reimu/sprite00.png");
 
   function update(deltaTime) {
-
     const { player, enemies, keys, gameZone, bullets, canvas } = gameState;
     bullets.forEach((bullet) => {
-      bullet.update(deltaTime)
-
+      bullet.update(deltaTime);
     });
     enemies.forEach((enemy) => {
-
-      enemy.update(deltaTime, bullets, enemies, player)
+      enemy.update(deltaTime, bullets, enemies, player);
     });
     player.update(deltaTime, keys, gameZone, bullets, status);
-    gameState.bullets = bullets.filter((bullet) => !bullet.isOffScreen(gameZone));
+    gameState.bullets = bullets.filter(
+      (bullet) => !bullet.isOffScreen(gameZone)
+    );
   }
   function render() {
     const { ctx, enemies, canvas, gameZone, bullets, player, sidebar } =
@@ -175,24 +170,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     gameZone.render(ctx);
     bullets.forEach((bullet) => {
-
-      bullet.render(ctx)
+      bullet.render(ctx);
     });
     enemies.forEach((enemy) => {
-
       enemy.render(ctx);
-
       if (enemy.sprite.src.includes("rumia")) {
-
         enemy.renderHpBar(ctx, gameZone);
       }
     });
     player.render(ctx);
-
     sidebar.render(ctx);
   }
 
   initialize();
   spawnEnemy();
-
 });

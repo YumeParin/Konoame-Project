@@ -1,58 +1,56 @@
 import Bullet from "./Bullet.mjs";
+
 export default class Enemy {
-  constructor(
+  constructor({
     x,
     y,
     speed,
     spriteSrc,
     cooldown = 2,
     hitboxSize = 20,
-    maxHp = 10000
-  ) {
-    this.x = x;
-    this.y = y;
+    maxHp = 10000,
+  }) {
+    this.position = { x, y };
     this.speed = speed;
-    this.sprite = new Image();
-    this.sprite.src = spriteSrc;
     this.cooldown = cooldown;
-    this.hitboxSize = hitboxSize;
-    this.currentCooldown = 0;
+    this.timers = this.initializeTimers();
 
     this.hp = maxHp;
     this.maxHp = maxHp;
+    this.hitboxRadius = hitboxSize / 2;
 
+    this.sprite = this.loadSprite(spriteSrc);
     this.width = hitboxSize;
     this.height = hitboxSize;
 
-    this.waveTimers = {
-      right: 0,
-      left: 0,
-    };
-    this.waveIndexes = {
-      right: 0,
-      left: 0,
-    };
+    this.bulletColors = this.initializeBulletColors();
+  }
 
-    this.currentCooldowns = {
-      spiralGreen: 0,
-      spiralCyan: 0,
-      spiralMagenta: 0,
-      spiralRed: 0,
-      spiralYellow: 0,
+  initializeTimers() {
+    return {
+      cooldowns: {
+        spiralGreen: 0.6,
+        spiralRed: 0.4,
+        spiralCyan: 2.5,
+        spiralMagenta: 0.05,
+        spiralYellow: 0.3,
+      },
+      currentCooldowns: {
+        spiralGreen: 0,
+        spiralCyan: 0,
+        spiralMagenta: 0,
+        spiralRed: 0,
+        spiralYellow: 0,
+      },
+      wave: {
+        right: { timer: 0, index: 0 },
+        left: { timer: 0, index: 0 },
+      },
     };
-    this.cooldowns = {
-      spiralGreen: 0.6,
-      spiralRed: 0.4,
-      spiralCyan: 2.5,
-      spiralMagenta: 0.05,
-      spiralYellow: 0.3,
-    };
+  }
 
-    this.sprite.onload = () => {
-      this.width = this.sprite.width * 2;
-      this.height = this.sprite.height * 2;
-    };
-    this.bulletColors = {
+  initializeBulletColors() {
+    return {
       red: "./assets/enemy/rumia/bullet04.png",
       magenta: "./assets/enemy/rumia/bullet03.png",
       green: "./assets/enemy/rumia/bullet00.png",
@@ -61,141 +59,93 @@ export default class Enemy {
     };
   }
 
-  update(deltaTime, bullets, enemies, player) {
+  loadSprite(src) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      this.width = img.width * 2;
+      this.height = img.height * 2;
+    };
+    return img;
+  }
 
-    for (const key in this.currentCooldowns) {
-      if (this.currentCooldowns[key] > 0) {
-        this.currentCooldowns[key] -= deltaTime;
+  update(deltaTime, bullets, enemies, player) {
+    this.reduceCooldowns(deltaTime);
+    this.position.y += this.speed * deltaTime;
+    this.shootPatterns(deltaTime, bullets, player);
+    this.handleCollisions(bullets, enemies);
+  }
+
+  reduceCooldowns(deltaTime) {
+    for (const key in this.timers.currentCooldowns) {
+      if (this.timers.currentCooldowns[key] > 0) {
+        this.timers.currentCooldowns[key] -= deltaTime;
       }
     }
 
-    this.y += this.speed * deltaTime;
-
-    if (this.currentCooldowns.spiralRed <= 0) {
-      const time = (performance.now() / 25) % 360;
-      const numOfBullets = 20;
-      this.shootSpiral(
-        bullets,
-        numOfBullets,
-        time,
-        150,
-        true,
-        this.bulletColors.red
-      );
-      this.currentCooldowns.spiralRed = this.cooldowns.spiralRed;
+    for (const wave in this.timers.wave) {
+      if (this.timers.wave[wave].timer > 0) {
+        this.timers.wave[wave].timer -= deltaTime;
+      }
     }
-    if (this.currentCooldowns.spiralYellow <= 0) {
-      const time = (performance.now() / 50) % 360;
-      const numOfBullets = 10;
-      this.shootSpiral(
+  }
+
+  shootPatterns(deltaTime, bullets, player) {
+    const { spiralRed, spiralYellow, spiralGreen, spiralMagenta, spiralCyan } =
+      this.timers.currentCooldowns;
+    if (spiralRed <= 0) {
+      const angleOffset = (performance.now() / 25) % 360;
+      this.shootSpiral(bullets, 20, 150, true, "red", angleOffset);
+      this.timers.currentCooldowns.spiralRed = this.timers.cooldowns.spiralRed;
+    }
+    if (spiralYellow <= 0) {
+      const angleOffset = (performance.now() / 25) % 360;
+      this.shootSpiral(bullets, 10, 250, true, "yellow", angleOffset);
+      this.timers.currentCooldowns.spiralYellow =
+        this.timers.cooldowns.spiralYellow;
+    }
+    if (spiralGreen <= 0) {
+      const angleOffset = (performance.now() / 25) % 360;
+      this.shootSpiral(bullets, 50, 100, true, "green", angleOffset);
+      this.timers.currentCooldowns.spiralGreen =
+        this.timers.cooldowns.spiralGreen;
+    }
+    if (spiralMagenta <= 0) {
+      const angleOffset = (performance.now() / 5) % 360;
+      this.shootSpiral(bullets, 1, 175, false, "magenta", angleOffset);
+      this.shootSpiral(bullets, 1, 175, true, "magenta", angleOffset);
+      this.timers.currentCooldowns.spiralMagenta =
+        this.timers.cooldowns.spiralMagenta;
+    }
+
+    if (spiralCyan <= 0) {
+      this.shootWave(
         bullets,
-        numOfBullets,
-        time,
+        3,
+        0.25,
         250,
-        false,
-        this.bulletColors.yellow
+        player,
+        deltaTime,
+        this.bulletColors.cyan,
+        "left",
+        this.position.x - 100
       );
-      this.currentCooldowns.spiralYellow = this.cooldowns.spiralYellow;
-    }
-    if (this.currentCooldowns.spiralGreen <= 0) {
-      const time = (performance.now() / 50) % 360;
-      const numOfBullets = 50;
-      this.shootSpiral(
+      this.shootWave(
         bullets,
-        numOfBullets,
-        time,
-        100,
-        false,
-        this.bulletColors.green
+        3,
+        0.25,
+        250,
+        player,
+        deltaTime,
+        this.bulletColors.cyan,
+        "right",
+        this.position.x + 100
       );
-      this.currentCooldowns.spiralGreen = this.cooldowns.spiralGreen;
-    }
-    if (this.currentCooldowns.spiralMagenta <= 0) {
-      const time = (performance.now() / 10) % 360;
-      const numOfBullets = 1;
-      this.shootSpiral(
-        bullets,
-        numOfBullets,
-        time,
-        175,
-        false,
-        this.bulletColors.magenta
-      );
-      this.shootSpiral(
-        bullets,
-        numOfBullets,
-        time,
-        175,
-        true,
-        this.bulletColors.magenta
-      );
-      this.currentCooldowns.spiralMagenta = this.cooldowns.spiralMagenta;
-    }
-
-    if (this.currentCooldowns.spiralCyan <= 0) {
-      const bulletCount = 3;
-      const spread = 40;
-      const speed = 250;
-      this.shootWave(bullets, bulletCount, spread, speed, player, deltaTime, this.x - 100, this.y, "left");
-
-      this.shootWave(bullets, bulletCount, spread, speed, player, deltaTime, this.x + 100, this.y, "right");
-    }
-
-
-    this.handleCollisions(bullets, enemies);
-  }
-  // shoot(bullets) {
-
-  //     if (this.currentCooldown <= 0) {
-  //         this.shootSpiral(bullets, 15, 0, 100);
-  //         this.currentCooldown = this.cooldown;
-  //     }
-  // }
-  shootWave(bullets, bulletCount, spread, speed, player, deltaTime, startX = this.x, startY = this.y, waveId) {
-    // Calculate angle to player
-    const dx = player.x - startX;
-    const dy = player.y - startY;
-    const angleToPlayer = Math.atan2(dy, -dx) * (180 / Math.PI);
-
-    // Check if it's time to shoot the next bullet in the wave
-    if (this.waveTimers[waveId] <= 0 && this.waveIndexes[waveId] < bulletCount) {
-      bullets.push(
-        new Bullet({
-          friendly: false,
-          direction: angleToPlayer - 90,
-          x: startX,
-          y: startY,
-          speed: speed,
-          spriteSrc: "./assets/enemy/rumia/bullet02.png",
-          isRound: true,
-          width: 35,
-          height: 35,
-        })
-      );
-      this.waveIndexes[waveId]++;
-      this.waveTimers[waveId] = 0.25; // Delay between bullets in the wave
-    }
-
-    // Reset wave after firing all bullets
-    if (this.waveIndexes[waveId] >= bulletCount) {
-      this.waveIndexes[waveId] = 0;
-      this.waveTimers[waveId] = 0;
-      this.currentCooldowns.spiralCyan = this.cooldowns.spiralCyan; // Cooldown before the next wave
-    }
-
-    // Reduce wave timer
-    if (this.waveTimers[waveId] > 0) {
-      this.waveTimers[waveId] -= deltaTime;
     }
   }
-  shootSpiral(
-    bullets,
-    bulletCount,
-    angleOffset,
-    speed,
-    clockwise,
-    bulletColorSpriteSrc
-  ) {
+
+  shootSpiral(bullets, bulletCount, speed, clockwise, colorKey, angleOffset) {
+    const bulletColor = this.bulletColors[colorKey];
     const angleStep = 360 / bulletCount;
     for (let i = 0; i < bulletCount; i++) {
       const angle = clockwise
@@ -206,16 +156,73 @@ export default class Enemy {
         new Bullet({
           friendly: false,
           direction: angle,
-          x: this.x,
-          y: this.y,
-          speed: speed,
-          spriteSrc: bulletColorSpriteSrc,
+          x: this.position.x,
+          y: this.position.y,
+          speed,
+          spriteSrc: bulletColor,
+          isRound: true,
           width: 25,
           height: 25,
-          isRound: true,
         })
       );
     }
+  }
+
+  shootWave(
+    bullets,
+    bulletCount,
+    spread,
+    speed,
+    player,
+    deltaTime,
+    bulletSpriteSrc,
+    waveId,
+    startX = this.position.x,
+    startY = this.position.y
+  ) {
+    if (!this.timers.wave[waveId]) {
+      console.error(`Invalid waveId: ${waveId}`);
+      return;
+    }
+    const { x, y } = player.position;
+    const dx = x - startX;
+    const dy = y - startY;
+    const angleToPlayer = Math.atan2(dy, -dx) * (180 / Math.PI);
+    // console.log(this.timers.wave[waveId].index < bulletCount);
+    // console.log(bulletCount);
+
+    if (
+      this.timers.wave[waveId].timer <= 0 &&
+      this.timers.wave[waveId].index < bulletCount
+    ) {
+      bullets.push(
+        new Bullet({
+          friendly: false,
+          direction: angleToPlayer - 90,
+          x: startX,
+          y: startY,
+          speed: speed,
+          spriteSrc: bulletSpriteSrc,
+          isRound: true,
+          width: 30,
+          height: 30,
+        })
+      );
+      this.timers.wave[waveId].index++; //index = 1
+
+      this.timers.wave[waveId].timer = spread; //spread = 0.25
+      // rentre 1 fois
+    }
+
+    if (this.timers.wave[waveId].index >= bulletCount) {
+      this.timers.wave[waveId].index = 0;
+      this.timers.wave[waveId].timer = 0;
+      this.timers.currentCooldowns.spiralCyan =
+        this.timers.cooldowns.spiralCyan;
+      //rentre 0 fois
+    }
+
+    //rentre fréquement
   }
 
   handleCollisions(bullets, enemies) {
@@ -231,26 +238,22 @@ export default class Enemy {
       }
     }
   }
+
   onDeath(enemies) {
     console.log("Rumia defeated !");
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const enemy = enemies[i];
-      if (enemy == this) {
-        enemies.splice(i, 1);
-      }
-    }
+    const index = enemies.indexOf(this);
+    if (index > -1) enemies.splice(index, 1);
   }
 
   render(ctx) {
     ctx.drawImage(
       this.sprite,
-      this.x - this.width / 2,
-      this.y - this.height / 2,
+      this.position.x - this.width / 2,
+      this.position.y - this.height / 2,
       this.width,
       this.height
     );
-
-    // Debug
+    // //Debug
     // ctx.save();
     // ctx.strokeStyle = "yellow";
     // ctx.lineWidth = 2;
@@ -262,8 +265,14 @@ export default class Enemy {
     // );
     // ctx.restore();
   }
-  isOffScreen(scene) {
-    return this.y - this.height > scene.height;
+
+  getBounds() {
+    return {
+      left: this.position.x - this.width / 2,
+      right: this.position.x + this.width / 2,
+      top: this.position.y - this.height / 2,
+      bottom: this.position.y + this.height / 2,
+    };
   }
 
   renderHpBar(ctx, gameZone) {

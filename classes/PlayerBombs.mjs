@@ -20,7 +20,7 @@ export default class PlayerBombs {
       this.bomb00Sprite.width * 2.5,
       this.bomb00Sprite.height * 2.5
     );
-    for (let i = 0; i < player.bomb; i++) {
+    for (let i = 0; i < player.stats.bomb; i++) {
       ctx.drawImage(
         this.bomb01Sprite,
         880 + i * 35,
